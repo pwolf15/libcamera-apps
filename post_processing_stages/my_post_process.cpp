@@ -55,6 +55,20 @@ void MyPostProcessStage::Configure()
 		throw std::runtime_error("MyPostProcessStage: only YUV420 format supported");
 }
 
+void my_post_process(cv::Mat& src)
+{
+	for (int i = 0; i < src.rows; ++i)
+	{
+		for (int j = 0; j < src.cols; ++j)
+		{
+			Vec3b& v = src.at<Vec3b>(i,j);
+			v[0] = 255;
+			v[1] = 255;
+			v[2] = 255;
+		}
+	}
+}
+
 bool MyPostProcessStage::Process(CompletedRequestPtr &completed_request)
 {
 	StreamInfo info = app_->GetStreamInfo(stream_);
@@ -72,22 +86,23 @@ bool MyPostProcessStage::Process(CompletedRequestPtr &completed_request)
 
 	memset(ptr + info.stride * info.height, value, num);
 
+	my_post_process(src);
 	// Remove noise by blurring with a Gaussian filter ( kernal size = 3 )
-	GaussianBlur(src, src, Size(111, 111), 0, 0, BORDER_DEFAULT);
+	// GaussianBlur(src, src, Size(111, 111), 0, 0, BORDER_DEFAULT);
 
-	Mat grad_x, grad_y;
+	// Mat grad_x, grad_y;
 
-	// //Scharr(src_gray, grad_x, ddepth, 1, 0, scale, delta, BORDER_DEFAULT);
-	// Sobel(src, grad_x, ddepth, 1, 0, ksize_, scale, delta, BORDER_DEFAULT);
-	// //Scharr(src_gray, grad_y, ddepth, 0, 1, scale, delta, BORDER_DEFAULT);
-	// Sobel(src, grad_y, ddepth, 0, 1, ksize_, scale, delta, BORDER_DEFAULT);
+	// // //Scharr(src_gray, grad_x, ddepth, 1, 0, scale, delta, BORDER_DEFAULT);
+	// // Sobel(src, grad_x, ddepth, 1, 0, ksize_, scale, delta, BORDER_DEFAULT);
+	// // //Scharr(src_gray, grad_y, ddepth, 0, 1, scale, delta, BORDER_DEFAULT);
+	// // Sobel(src, grad_y, ddepth, 0, 1, ksize_, scale, delta, BORDER_DEFAULT);
 
-	// converting back to CV_8U
-	convertScaleAbs(grad_x, grad_x);
-	convertScaleAbs(grad_y, grad_y);
+	// // converting back to CV_8U
+	// convertScaleAbs(grad_x, grad_x);
+	// convertScaleAbs(grad_y, grad_y);
 
-	//weight the x and y gradients and add their magnitudes
-	addWeighted(grad_x, 0.5, grad_y, 0.5, 0, src);
+	// //weight the x and y gradients and add their magnitudes
+	// addWeighted(grad_x, 0.5, grad_y, 0.5, 0, src);
 
 	return false;
 }
