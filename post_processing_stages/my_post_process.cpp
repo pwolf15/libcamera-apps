@@ -55,18 +55,87 @@ void MyPostProcessStage::Configure()
 		throw std::runtime_error("MyPostProcessStage: only YUV420 format supported");
 }
 
+// Gaussian
+// Sobel
+// Scharr
+
+struct Image
+{
+  int Rows;
+  int Cols;
+  uint8_t* Data;
+  uint8_t Type;
+};
+
+void Convolve(struct Image &In, struct Image &Mask, struct Image &Out, int pitch, int bpp)
+{
+  long i,j,m,n,idx,jdx;
+  int ms,im,val;
+  uint32_t* tmp;
+  for (i = 0; i < In.Rows;++i)
+  {
+    for (j = 0; j < In.Cols;++j)
+    {
+      val = 0;
+      for (m=0;m<Mask.Rows;++m)
+      {
+        for (n=0;n<Mask.Cols;++n)
+        {
+          ms = (int8_t)*(Mask.Data + m*Mask.Rows+n);
+          idx = i - m;
+          jdx = j - n;
+          if (idx >= 0 && jdx >= 0)
+          {
+            im = *(In.Data + idx*pitch + jdx*bpp);
+            val += ms*im;
+          }
+        }
+      }
+
+			val = (uint32_t)((float)(val) / (float)16);
+      if (val > 255) val = 255;
+      if (val < 0) val = 0;
+      tmp = (uint32_t*)(Out.Data + i*pitch + j*bpp);
+      *tmp = (uint32_t)((val << 16) | (val << 8) | (val));
+    }
+  }
+}
+
 void my_post_process(cv::Mat& src)
 {
-	for (int i = 0; i < src.rows; ++i)
+	uint8_t *myData = src.data;
+	Image in, out, mask;
+	in.Data = myData;
+	in.Rows = src.rows;
+	in.Cols = src.cols;
+	out.Data = (uint8_t*)malloc(sizeof(uint8_t)*in.Rows*in.Cols);
+	out.Rows = in.Rows;
+	out.Cols = in.Cols;
+	std::vector<uint8_t> filter = 
 	{
-		for (int j = 0; j < src.cols; ++j)
-		{
-			Vec3b& v = src.at<Vec3b>(i,j);
-			v[0] = 255;
-			v[1] = 255;
-			v[2] = 255;
-		}
-	}
+		1,2,1,
+		2,4,2,
+		1,2,1
+	};
+	mask.Data = filter.data();
+	mask.Rows = 3;
+	mask.Cols = 3;
+	Convolve(in, mask, out, 1, out.Cols);
+
+	std::swap(src.data,out.Data);
+	// uint8_t *myData = src.data;
+	// int x,y;
+	// float noise, theta;
+	// for (int i = 0; i < src.rows; ++i)
+	// {
+	// 	for (int j = 0; j < src.cols; ++j)
+	// 	{
+	// 		noise = sqrt(-2)
+	// 		// v[0] = 0;
+	// 		// v[1] = 255;
+	// 		// v[2] = 0;
+	// 	}
+	// }
 }
 
 bool MyPostProcessStage::Process(CompletedRequestPtr &completed_request)
