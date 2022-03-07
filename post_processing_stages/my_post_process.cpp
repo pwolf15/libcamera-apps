@@ -67,21 +67,28 @@ struct Image
   uint8_t Type;
 };
 
+// pitch = size of row (including num pixels, channels)
+// bpp = bytes per pixel
 void Convolve(struct Image &In, struct Image &Mask, struct Image &Out, int pitch, int bpp)
 {
   long i,j,m,n,idx,jdx;
   int ms,im,val;
-  uint32_t* tmp;
+  // uint32_t* tmp;
   for (i = 0; i < In.Rows;++i)
   {
     for (j = 0; j < In.Cols;++j)
     {
       val = 0;
+
+			// performing convolution
       for (m=0;m<Mask.Rows;++m)
       {
         for (n=0;n<Mask.Cols;++n)
         {
+					// get mask factor
           ms = (int8_t)*(Mask.Data + m*Mask.Rows+n);
+
+					// get current mask index into image
           idx = i - m;
           jdx = j - n;
           if (idx >= 0 && jdx >= 0)
@@ -95,8 +102,8 @@ void Convolve(struct Image &In, struct Image &Mask, struct Image &Out, int pitch
 			val = (uint32_t)((float)(val) / (float)16);
       if (val > 255) val = 255;
       if (val < 0) val = 0;
-      tmp = (uint32_t*)(Out.Data + i*pitch + j*bpp);
-      *tmp = (uint32_t)((val << 16) | (val << 8) | (val));
+      // tmp = (uint32_t*)(Out.Data + i*pitch + j*bpp);
+      // *tmp = (uint32_t)((val << 16) | (val << 8) | (val));
     }
   }
 }
@@ -108,6 +115,8 @@ void my_post_process(cv::Mat& src)
 	in.Data = myData;
 	in.Rows = src.rows;
 	in.Cols = src.cols;
+	std::cout << "Rows: " << in.Rows << std::endl;
+	std::cout << "Cols: " << in.Cols << std::endl;
 	out.Data = (uint8_t*)malloc(sizeof(uint8_t)*in.Rows*in.Cols);
 	out.Rows = in.Rows;
 	out.Cols = in.Cols;
@@ -122,7 +131,7 @@ void my_post_process(cv::Mat& src)
 	mask.Cols = 3;
 	Convolve(in, mask, out, 1, out.Cols);
 
-	std::swap(src.data,out.Data);
+	// std::swap(src.data,out.Data);
 	// uint8_t *myData = src.data;
 	// int x,y;
 	// float noise, theta;
